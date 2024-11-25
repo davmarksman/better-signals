@@ -109,7 +109,7 @@ function signals.updateSignals()
 
 									newCheckSum = signalPath.checksum
 
-									if (not signals.signalObjects[signalString].checksum) or (newCheckSum ~= signals.signalObjects[signalString].checksum) or (getSignalType(signalPath) == "hybrid" or getSignalType(signalPath) == "pre") then
+									if (not signals.signalObjects[signalString].checksum) or (newCheckSum ~= signals.signalObjects[signalString].checksum) then
 										utils.updateConstruction(oldConstruction, conSignal)
 									end
 								else
