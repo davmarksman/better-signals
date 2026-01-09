@@ -139,6 +139,44 @@ function data()
 			elseif name == "signals.removeByConsruction" then
 				signals.removeSignalByConstruction(param.entityId)
 
+				-- Not sure necessary
+			elseif name == "tracking.add" then
+				for key, value in pairs(signals.signalObjects) do
+					for index, signal in ipairs(value.signals) do
+						if signal.construction == param.entityId then
+							if signalState.connectedSignal ~= nil then
+								signalState.connectedUpdated = true
+							end
+							signalState.connectedSignal = string.match(key, "%d+$")
+							zone.markEntity("connectedSignal", tonumber(signalState.connectedSignal), 1, {0, 1, 0, 1})
+						elseif key == "signal" .. param.entityId then
+							local modelInstance = utils.getComponentProtected(param.entityId, 58)
+							if modelInstance then
+								local transf = modelInstance.fatInstances[1].transf
+								if transf then
+									tempSignalPosTracker["signal" .. param.entityId] = {}
+									tempSignalPosTracker["signal" .. param.entityId].pos = {transf[13], transf[14]}
+								end
+							end
+						end
+					end
+				end
+
+				-- Not sure necessary
+			elseif name == "tracking.remove" then
+				for key, value in pairs(signals.signalObjects) do
+					for index, signal in ipairs(value.signals) do
+						if signal.construction == param.entityId or key == "signal" .. param.entityId then
+							if not signalState.connectedUpdated then
+								signalState.connectedSignal = nil
+								zone.remZone("connectedSignal")
+							else
+								signalState.connectedUpdated = false
+							end
+						end
+					end
+				end
+
 			elseif name == "signals.rebuild" then
 				for old, new in pairs(param.matchedObjects) do
 					for key, value in pairs(signals.signalObjects) do
@@ -149,6 +187,7 @@ function data()
 					end
 				end
 
+				-- Not sure necessary
 			elseif name =="signals.modeSwitch" then
 				for key, value in pairs(signals.signalObjects) do
 					if (key == "signal" .. param.entityId) and (tempSignalPosTracker["signal" .. param.entityId].pos ~= nil) then
@@ -248,7 +287,7 @@ function data()
 				else
 					signal_params.selection = param.proposal.toAdd[1].params.paramY
 				end
-				
+								
 				game.interface.sendScriptEvent("__signalEvent__", name, signal_params)
 			elseif utils.starts_with(id, "temp.view.entity_") then
 				local entityId = string.match(id, "%d+$")
@@ -256,8 +295,13 @@ function data()
 					param = {}
 				end
 
-				if name == "window.close" or name == "destroy" then
+				if name == "idAdded" then
 					param.entityId = tonumber(entityId)
+					game.interface.sendScriptEvent("__signalEvent__", "tracking.add", param)
+				elseif name == "window.close" or name == "destroy" then
+					param.entityId = tonumber(entityId)
+					game.interface.sendScriptEvent("__signalEvent__", "tracking.remove", param)
+
 					if name == "destroy" then
 						game.interface.sendScriptEvent("__signalEvent__", "signals.modeSwitch", param)
 					end
