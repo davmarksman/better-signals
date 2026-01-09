@@ -20,20 +20,23 @@ function data()
 					key = "better_signals_view_distance",
 					name = _("better_signals_view_distance"),
 					uiType = "SLIDER",
-					values = { _("10"), _("20"), _("30"), _("40"), _("50"), _("60"), _("70"), _("80"), _("90"), _("100"), _("110"), _("120"), _("130"), _("140"), _("150"), _("160"), _("170"), _("180"), _("190"), _("200") },
+					values = {  _("500"), _("1000"), _("1500"), _("2000"), _("2500"), _("3000"), },
 					tooltip = _("better_signals_view_distance_tooltip"),
-					defaultIndex = 15,
+					defaultIndex = 4,
 				  },
 			},
 		},
 		runFn = function(settings, modParams)
-
-
 			if modParams[getCurrentModId()] ~= nil then
 				local params = modParams[getCurrentModId()]
 				
 				if params["better_signals_view_distance"] ~= nil then
-					signals.viewDistance = params["better_signals_view_distance"] *10
+					-- Support old values - default to 2000
+					if params["better_signals_view_distance"] > 6 then
+						signals.viewDistance = 2000
+					else
+						signals.viewDistance = (params["better_signals_view_distance"]+1) * 500
+					end
 				end
 			end
 

@@ -11,6 +11,9 @@ local signalState = {
 	connectedUpdated = false,
 }
 
+local updateCount =0
+local updateAt = 10
+
 local inital_load = true
 local scriptCurrentVersion = 1
 
@@ -22,7 +25,7 @@ local tempSignalPosTracker = {}
 -- @param params param value from the guiHandleEvent
 -- @return returns table with information about the signal
 local function getSignal(params)
-    if not params.proposal.toAdd or #params.proposal.toAdd == 0 then
+	if not params.proposal.toAdd or #params.proposal.toAdd == 0 then
 		return nil
 	end
 	
@@ -88,25 +91,26 @@ function data()
 				print("Better Signals - Finish Migration")
 			end
 
-			local success, errorMessage = pcall(signals.updateSignals)
-		
-			if success then
-			else 
-				print(errorMessage)
+			if updateCount >= updateAt then
+				updateCount = 0
+				local success, errorMessage = pcall(signals.updateSignals)
+				if success then
+				else
+					print(errorMessage)
+				end
 			end
+			updateCount = updateCount + 1
 		end,
 		guiUpdate = function()
-			local controller = api.gui.util.getGameUI():getMainRendererComponent():getCameraController()
-			local camPos, _, _ = controller:getCameraData()
-			
-			game.interface.sendScriptEvent("__signalEvent__", "signals.viewUpdate", {camPos[1], camPos[2]})
+			local camPos= game.gui.getCamera()
+			game.interface.sendScriptEvent("__signalEvent__", "signals.viewUpdate", {camPos[1], camPos[2],camPos[3] })
 		end,
 		handleEvent = function(src, id, name, param)
 			if id ~="__signalEvent__" or src ~= "nighty_better_signals_placer_callback.lua" then
 				return
 			end
 			
-            if name == "builder.apply" then
+			if name == "builder.apply" then
 				signals.removeTunnel(param.construction)
 
 				if signalState.markedSignal then
@@ -122,8 +126,8 @@ function data()
 				markSignal(signalState.possibleSignals)
 
 			elseif name == "signals.viewUpdate" then
-				signals.pos = param
-				
+				signals.updateGuiCameraPos({param[1], param[2]}, param[3])
+
 			elseif name == "signals.reset" then
 				zone.remZone("selectedSignal")
 
@@ -135,46 +139,6 @@ function data()
 			elseif name == "signals.removeByConsruction" then
 				signals.removeSignalByConstruction(param.entityId)
 
-			elseif name == "tracking.add" then
-				for key, value in pairs(signals.signalObjects) do
-					for index, signal in ipairs(value.signals) do
-						if signal.construction == param.entityId then
-							if signalState.connectedSignal ~= nil then
-								signalState.connectedUpdated = true
-							end
-							signalState.connectedSignal = string.match(key, "%d+$")
-							zone.markEntity("connectedSignal", tonumber(signalState.connectedSignal), 1, {0, 1, 0, 1})
-						elseif key == "signal" .. param.entityId then
-							local modelInstance = utils.getComponentProtected(param.entityId, 58)
-							if modelInstance then
-								local transf = modelInstance.fatInstances[1].transf
-								if transf then
-									tempSignalPosTracker["signal" .. param.entityId] = {}
-									tempSignalPosTracker["signal" .. param.entityId].pos = {transf[13], transf[14]}
-								end
-							end
-						end
-					end
-				end
-
-				table.insert(signals.trackedEntities, param.entityId)
-
-			elseif name == "tracking.remove" then
-				for key, value in pairs(signals.signalObjects) do
-					for index, signal in ipairs(value.signals) do
-						if signal.construction == param.entityId or key == "signal" .. param.entityId then
-							if not signalState.connectedUpdated then
-								signalState.connectedSignal = nil
-								zone.remZone("connectedSignal")
-							else
-								signalState.connectedUpdated = false
-							end
-						end
-					end
-				end
-
-				utils.removeFromTableByValue(signals.trackedEntities, param.entityId)
-
 			elseif name == "signals.rebuild" then
 				for old, new in pairs(param.matchedObjects) do
 					for key, value in pairs(signals.signalObjects) do
@@ -184,6 +148,7 @@ function data()
 						end
 					end
 				end
+
 			elseif name =="signals.modeSwitch" then
 				for key, value in pairs(signals.signalObjects) do
 					if (key == "signal" .. param.entityId) and (tempSignalPosTracker["signal" .. param.entityId].pos ~= nil) then
@@ -196,9 +161,23 @@ function data()
 						end
 					end
 				end
+			
+			elseif name == "signals.enterCockpit" then
+				signals.setCockpitMode(param.vehicleId)
 			end
 		end,
 		guiHandleEvent = function(id, name, param)
+
+			if name == "button.click" and id:match("enterCockpit") then
+				-- id is like: "vehicleWindow.entity500964.enterCockpit"
+				local temp = id:gsub("vehicleWindow.entity","")
+				local entstr = temp:gsub(".enterCockpit","")
+				local params = {}
+				params.vehicleId = tonumber(entstr)
+				game.interface.sendScriptEvent("__signalEvent__", "signals.enterCockpit", params)
+
+			end
+
 			if id == "trackBuilder" and name == "builder.apply" then
 				local matchedObjects = {}
 
@@ -250,8 +229,6 @@ function data()
 					end
 				end
 			end
-			if id == "bulldozer" then
-			end
 			if name == "visibilityChange" and param == false then
 				local signal = string.match(id, "^.+/(.+)%.con$")
 				
@@ -260,7 +237,6 @@ function data()
 				end
 				
 				game.interface.sendScriptEvent("__signalEvent__", "signals.reset", {})
-
 			elseif (name == "builder.apply") or (name == "builder.proposalCreate") then
 				local signal_params = getSignal(param)
 				if not signal_params then
@@ -274,20 +250,14 @@ function data()
 				end
 				
 				game.interface.sendScriptEvent("__signalEvent__", name, signal_params)
-				
 			elseif utils.starts_with(id, "temp.view.entity_") then
 				local entityId = string.match(id, "%d+$")
 				if not param then
 					param = {}
 				end
 
-				if name == "idAdded" then
+				if name == "window.close" or name == "destroy" then
 					param.entityId = tonumber(entityId)
-					game.interface.sendScriptEvent("__signalEvent__", "tracking.add", param)
-				elseif name == "window.close" or name == "destroy" then
-					param.entityId = tonumber(entityId)
-					game.interface.sendScriptEvent("__signalEvent__", "tracking.remove", param)
-
 					if name == "destroy" then
 						game.interface.sendScriptEvent("__signalEvent__", "signals.modeSwitch", param)
 					end
