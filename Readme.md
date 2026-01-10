@@ -1,6 +1,7 @@
-Great mod again.
+Great mod again. My changes only seek to improve a little on the hard work you've done and it's focused on a small part of the codebase because the rest is pretty amazing.
 
-Please note my changes need more testing and are not ready to be merged in. I'll update the PR as and when I find bugs. Please report any issues you spot.
+I'll update the PR as and when I find bugs. Please report any issues you spot. 
+That said I've tested it a fair bit using N-signals mod and it's working well with no issues.
 
 # Summary
 - Attempts to work out if a red signal is safe to be treated as green
@@ -25,11 +26,11 @@ A red signal can be treated as green if:
 
 
 ### Performance
-- Signals are only computed when signals are visible (when the camera is too zoomed out signals are not visibile, so no point slowing down the game then :))
-- Signals computation only happens every 10th game update event (every 2 seconds according to this: https://wiki.transportfever2.com/api/topics/states.md.html)
-- Only Trains within 2km of the camera are computed: so a signal up to 2km from a train can be triggered by that train. If the train is further out it's path is not computed so the signal doesn't get updated
-- Only 4 signals in front of the train are computed. (Don't need to compute more as )
-- With working out if a red signal is safe to be treated as green less signals are placed resulting in better computation
+- Signals are only computed when signals are visible (when the camera is too zoomed out signals are not visibile, so no point slowing down the already slow game then :))
+- Signals computation only happens every 10th game update event (every 2 seconds according to this: https://wiki.transportfever2.com/api/topics/states.md.html). It's a good trade off between performance and the user noticing
+- Only Trains within 2km of the camera are computed: so a signal up to 2km from a train can be triggered by that train. If the train is further out it's path is not computed so the signal doesn't get updated. The 2km is configurable from the mod menu
+- Only 4 signals in front of the train are computed. (Don't need to compute more as we attempt to get enough signals so we can get that nice Green - Yellow - Red)
+- As we work out if a red signal is safe to be treated as green less signals are placed resulting in better computation
 
 ## Logic
 - `signals.updateSignals` is only executed when the camera is zoomed in enough for signals to be visible
@@ -50,11 +51,13 @@ A red signal can be treated as green if:
 - Some more testing. Help is valued here :)
 - Removed functionality: presignals to simplify my implementation. I can add it back based off discussion (see discussions)
 - Ignoring waypoints. I can add it back based off discussion (see discussions)
-- Removed functionality: getting showSpeedChange from construction to simplify my implementation. Defaulted to true. Need some help understanding what it does
-- I seem to have broken signal speed indicators. Not sure why they're not showing on type N signals. Some help here would be useful. I don't normally play with them so wasn't as big a deal for me
+- Removed functionality: getting showSpeedChange from construction to simplify my implementation. Defaulted to true. Need some help understanding what it does then can add it back in
 
 
 # Discussion:
+
+### Adding a parameter to construction for if track is occupied
+We now dectect if a block is occupied by a train. Some signaling systems like your swiss type N mod have a signal to indicate to the train driver the track is occupied. We can now expose this as a param on the construction so other modders can use
 
 ### Waypoints for presignals
 In my opinion it would make sense for:
