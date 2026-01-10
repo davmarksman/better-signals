@@ -20,29 +20,30 @@ signals.cockpitTrainEntityId = nil
 signals.cockpitModeAtTime = nil -- We lock the cockpit mode for 2 seconds to prevent a race condition 
 -- where a late arriving camera move makes us think we're out of cockpitMode
 
+----------------------
+--GUI Location Update!
+--In cockpitMode the location Gui camera doesn't change but we can use the location of the train
+--TODO: Maybe move this section to it's own file?
 
--- In cockpitMode the location Gui camera doesn't change but we can use the location of the train
-
----Set's gui's camera position. Updated by event
+---Set's gui's camera position. Updated by event.
+---We detect the game has left cockpitMode when the location starts updating again: the camera zooms to and tracks the train.
+---When entering cockpit mode when the camera is following a train there is a race condition so we only allow
+---detecting exiting cockpitMode after 2 seconds
 ---@param pos table<number> x,y position
 ---@param radius number
 function signals.updateGuiCameraPos(pos, radius)
 	if signals.cockpitMode then
-		-- only allow updates after we've been in cockpitMode for at least 2 seconds to prevent a race condition
-		if signals.cockpitModeAtTime ~= nil then
+		if pos[1] == signals.pos[1] and pos[2] == signals.pos[2] then
+			-- No position change still in cockpitMode
+			return
+		elseif signals.cockpitModeAtTime ~= nil then
+			-- We wait 2 seconds before we start detecting exit cockpitMode
 			if os.clock() - signals.cockpitModeAtTime > 2  then
 				print("Cockpit mode unlock")
 				signals.cockpitModeAtTime = nil
-			else
-				return
 			end
-		end
-
-		if pos[1] == signals.pos[1] and pos[2] == signals.pos[2] then
-			return
 		else
-
-			-- When cockpit mode is exited the camera zooms to and tracks the train. This detects that
+			-- The location is updating so must hae exited cockpitMode
 			print("Exiting cockpit mode")
 			signals.cockpitMode = false
 			signals.cockpitTrainEntityId = nil
@@ -70,6 +71,7 @@ function signals.getPosition()
 	end
 	return signals.pos
 end
+----------------------
 
 -- 3 states: None, Changed, WasChanged
 
