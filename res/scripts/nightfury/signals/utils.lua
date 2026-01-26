@@ -36,16 +36,9 @@ end
 -- @param params parameter by which the new construction should be build
 -- @param reference is a reference to the old entity. This is used to check if the new entity still holds the same id as before
 function utils.updateConstruction(params, reference)
-	print("utils.updateConstruction",params.id, params.fileName)
-	-- for index, data in pairs( params.params) do
-	-- 	print("param", index, data)
-	-- end
 
-	-- if params.params.following_signal then
-	-- 	for index, data in pairs( params.params.following_signal) do
-	-- 		print("param Following", index, data)
-	-- 	end
-	-- end
+	-- TODO Remove
+	print("utils.updateConstruction",params.id)
 	params.params.seed = nil
 
 	local proposal = api.type.SimpleProposal.new()
@@ -81,7 +74,6 @@ end
 
 -- I had a rare issue where checksums collided so didn't update red signal to a green signal. I think it's due to the addition - You normally multiply for checksums
 -- We make sure the last 2 numbers in the checksum are determined by signal state and index. This forces an update if a signal goes from green to red
-
 ---Updates signal paths with checksums
 ---@param res [SignalPath]
 function utils.addChecksumToSignals(res)

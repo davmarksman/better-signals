@@ -1,7 +1,7 @@
 local utils = require "nightfury/signals/utils"
 
 local pathEvaluator = {}
-local debug = true
+local config_debug = false
 
 -- TODO Edge speeds
 
@@ -19,7 +19,6 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 	---@field incomplete boolean
 	---@field following_signal SignalPath
 	---@field previous_speed boolean
-	---@field showSpeedChange boolean
 	---@field checksum number
 
 	-- print("pathEvaluator.evaluate ", vehicleId)
@@ -54,7 +53,6 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 		signalPath.signal_state = signalState
 		signalPath.signal_speed = signalAndBlock.minSpeed
 		signalPath.incomplete = false
-		signalPath.showSpeedChange = true -- todo get from params on construction
 
 		if #res >0 then
 			signalPath.previous_speed = res[#res].signal_speed
@@ -68,7 +66,7 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 	utils.addChecksumToSignals(res)
 
 	-- For debuging can remove
-	if debug then
+	if config_debug then
 		for i = 1, #signalsInPath, 1 do
 			local signalAndBlock = signalsInPath[i]
 			local signalPath = res[i]
@@ -223,7 +221,9 @@ function pathEvaluator.recalcSignalState(block, trainLocsEdgeEntityIds, isLast, 
 	local hasTrainInPath = pathEvaluator.hasTrainInPath(block.edges, trainLocsEdgeEntityIds)
 
 	if not hasTrainInPath then
-		print("Treat red signal as green "  .. block.signalListEntityId)
+		if config_debug then
+			print("Treat red signal as green "  .. block.signalListEntityId)
+		end
 		return 1
 	else
 		-- print("Red signal at danger"  .. block.signalListEntityId)

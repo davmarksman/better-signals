@@ -39,12 +39,10 @@ function signals.updateGuiCameraPos(pos, radius)
 		elseif signals.cockpitModeAtTime ~= nil then
 			-- We wait 2 seconds before we start detecting exit cockpitMode
 			if os.clock() - signals.cockpitModeAtTime > 2  then
-				print("Cockpit mode unlock")
 				signals.cockpitModeAtTime = nil
 			end
 		else
 			-- The location is updating so must hae exited cockpitMode
-			print("Exiting cockpit mode")
 			signals.cockpitMode = false
 			signals.cockpitTrainEntityId = nil
 		end
@@ -54,12 +52,10 @@ function signals.updateGuiCameraPos(pos, radius)
 	signals.posRadius = radius
 end
 function signals.setCockpitMode(vehicleId)
-	-- TODO: Do this for any vehicle type not just trains.
 	if trainHelper.isTrain(vehicleId)  then
 		signals.cockpitMode = true
 		signals.cockpitTrainEntityId = vehicleId
 		signals.cockpitModeAtTime = os.clock()
-		print("Entering cockpit: for entity id" .. vehicleId)
 	end
 end
 function signals.getPosition()
@@ -83,9 +79,11 @@ function signals.updateSignals()
 		return
 	end
 
-	print("----------")
-	print("Better Signals ", signals.viewDistance)
-	print("----------")
+	if config_debug then
+		print("----------")
+		print("Better Signals ", signals.viewDistance)
+		print("----------")
+	end
 	local start_time = os.clock()
 
 	local pos = signals.getPosition()
@@ -99,7 +97,9 @@ function signals.updateSignals()
 	signals.updateConstructions(signalsToBeUpdated)
 
 	signals.throwSignalToRed()
-	print(string.format("updateSignals. Elapsed time: %.4f", os.clock() - start_time))
+	if config_debug then
+		print(string.format("updateSignals. Elapsed time: %.4f", os.clock() - start_time))
+	end
 end
 
 function signals.computeSignalPaths(trains, trainLocsEdgeIds)
@@ -164,7 +164,6 @@ function signals.updateConstructions(signalsToBeUpdated)
 						oldConstruction.params.signal_speed = signalPath.signal_speed
 						oldConstruction.params.following_signal = signalPath.following_signal
 						oldConstruction.params.paramsOverride = oldConstruction.params.paramsOverride
-						oldConstruction.params.showSpeedChange = true  -- TODO: FIX THIS
 						if signalPath.lineName ~= "ERROR" then
 							oldConstruction.params.currentLine = signalPath.lineName
 						end
@@ -173,6 +172,16 @@ function signals.updateConstructions(signalsToBeUpdated)
 
 						if (not signals.signalObjects[signalKey].checksum) or (newCheckSum ~= signals.signalObjects[signalKey].checksum) then
 							utils.updateConstruction(oldConstruction, conSignal)
+							
+							-- Should I take this out? I use it for debugging but not necessary in code
+							if config_debug then
+								local followingState = -1
+								if signalPath.following_signal then
+									followingState = signalPath.following_signal.signal_state
+								end
+
+								print("utils.updateConstruction for ", signalPath.entity, newCheckSum, signals.signalObjects[signalKey].checksum, followingState,signalPath.signal_state )
+							end
 						end
 					else
 						print("Couldn't access params")
@@ -215,7 +224,6 @@ end
 -- @param construct construction entityid
 function signals.createSignal(signal, construct, signalType, isAnimated)
 	local signalKey = "signal" .. signal
-	print("Register Signal: " .. signal .. " (" .. signalKey ..") With construction: " .. construct)
 
 	if not signals.signalObjects[signalKey] then
 		signals.signalObjects[signalKey] = {}

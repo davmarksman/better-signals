@@ -139,7 +139,6 @@ function data()
 			elseif name == "signals.removeByConsruction" then
 				signals.removeSignalByConstruction(param.entityId)
 
-				-- Not sure necessary
 			elseif name == "tracking.add" then
 				for key, value in pairs(signals.signalObjects) do
 					for index, signal in ipairs(value.signals) do
@@ -162,7 +161,6 @@ function data()
 					end
 				end
 
-				-- Not sure necessary
 			elseif name == "tracking.remove" then
 				for key, value in pairs(signals.signalObjects) do
 					for index, signal in ipairs(value.signals) do
@@ -187,7 +185,6 @@ function data()
 					end
 				end
 
-				-- Not sure necessary
 			elseif name =="signals.modeSwitch" then
 				for key, value in pairs(signals.signalObjects) do
 					if (key == "signal" .. param.entityId) and (tempSignalPosTracker["signal" .. param.entityId].pos ~= nil) then
@@ -214,7 +211,6 @@ function data()
 				local params = {}
 				params.vehicleId = tonumber(entstr)
 				game.interface.sendScriptEvent("__signalEvent__", "signals.enterCockpit", params)
-
 			end
 
 			if id == "trackBuilder" and name == "builder.apply" then
@@ -277,6 +273,7 @@ function data()
 				
 				game.interface.sendScriptEvent("__signalEvent__", "signals.reset", {})
 			elseif (name == "builder.apply") or (name == "builder.proposalCreate") then
+				-- print("builder.proposalCreate")
 				local signal_params = getSignal(param)
 				if not signal_params then
 					return
