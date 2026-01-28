@@ -12,18 +12,18 @@ local signalState = {
 }
 
 local updateCount =0
-local updateAt = 10
+local updateAt = 5  -- Game updates roughly every 200 ms. With 5 will run the script roughly every 1 second
 
 local inital_load = true
 local scriptCurrentVersion = 1
 
 local tempSignalPosTracker = {}
 
--- Function will analyze params and determine if it's a in the config
--- registered Signal.
--- If a signal is detected it returns signal params
--- @param params param value from the guiHandleEvent
--- @return returns table with information about the signal
+--- Function will analyze params and determine if it's a in the config
+--- registered Signal.
+--- If a signal is detected it returns signal params
+--- @param params param value from the guiHandleEvent
+--- @return  table|nil  with information about the signal
 local function getSignal(params)
 	if not params.proposal.toAdd or #params.proposal.toAdd == 0 then
 		return nil
@@ -33,7 +33,7 @@ local function getSignal(params)
     local signal = string.match(added.fileName, "^.+/(.+)%.con$")
 
 	if signals.signals[signal] == nil then
-		return
+		return nil
 	end
 
     local position = {added.transf[13], added.transf[14], added.transf[15]}

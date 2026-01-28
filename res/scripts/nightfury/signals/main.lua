@@ -5,7 +5,7 @@ local utils = require "nightfury/signals/utils"
 local config_signalsToEvaluate = 4 -- 4 works well for home/distant. For 4 aspect signalling use 5. This should idealy be a config option
 local config_lookAheadEdges = 100
 local config_cameraRadiusSignalVisibleAt = 500 -- Can't see signal when camera radius is > 500
-local config_debug = true
+local config_debug = false
 
 
 local signals = {}
@@ -114,7 +114,7 @@ function signals.computeSignalPaths(trains, trainLocsEdgeIds)
 		end
 
 		local lineName = trainHelper.getLineNameOfVehicle(vehComp)
-		local signalPaths = pathEvaluator.evaluate(vehicleId, config_lookAheadEdges, config_signalsToEvaluate, trainLocsEdgeIds)
+		local signalPaths = pathEvaluator.evaluate(vehicleId, config_lookAheadEdges, config_signalsToEvaluate, trainLocsEdgeIds, signals.signalObjects, signals.signals)
 
 		for _, signalPath in ipairs(signalPaths) do
 			signalPath.lineName = lineName.name
@@ -133,7 +133,7 @@ function signals.recordSignalToBeUpdated(signalPath, signalsToBeUpdated)
 		if existingPath.signal_state < signalPath.signal_state then
 			signalsToBeUpdated[signalKey] = signalPath
 		elseif existingPath.signal_state == 1 and signalPath.signal_state == 1 then
-			-- Both green, use next signal state to prioritise so we don't get a yellow followed by a green
+			-- Both green, use next signal state to prioritise so we don't get a signal showing yellow followed by signal showing green
 			if existingPath.following_signal and signalPath.following_signal then
 				if existingPath.following_signal.signal_state < signalPath.following_signal.signal_state then
 					signalsToBeUpdated[signalKey] = signalPath
@@ -163,7 +163,7 @@ function signals.updateConstructions(signalsToBeUpdated)
 						oldConstruction.params.signal_state = signalPath.signal_state
 						oldConstruction.params.signal_speed = signalPath.signal_speed
 						oldConstruction.params.following_signal = signalPath.following_signal
-						oldConstruction.params.paramsOverride = oldConstruction.params.paramsOverride
+						oldConstruction.params.paramsOverride = signalPath.paramsOverride
 						if signalPath.lineName ~= "ERROR" then
 							oldConstruction.params.currentLine = signalPath.lineName
 						end
@@ -173,7 +173,7 @@ function signals.updateConstructions(signalsToBeUpdated)
 						if (not signals.signalObjects[signalKey].checksum) or (newCheckSum ~= signals.signalObjects[signalKey].checksum) then
 							utils.updateConstruction(oldConstruction, conSignal)
 							
-							-- Should I take this out? I use it for debugging but not necessary in code
+							-- TODO: Should I take this out? I use it for debugging but not necessary in code
 							if config_debug then
 								local followingState = -1
 								if signalPath.following_signal then
@@ -265,29 +265,6 @@ function signals.removeTunnel(signalConstructionId)
 
 		utils.updateConstruction(oldConstruction, signalConstructionId)
 	end
-end
-
-function parseName(input)
-    local result = {}
-    -- Entferne Leerzeichen am Anfang und Ende des Strings
-    input = input:match("^%s*(.-)%s*$")
-
-    -- Iteriere über jedes Paar, das durch Kommas getrennt ist
-    for pair in string.gmatch(input, '([^,]+)') do
-        local key, value = pair:match("^%s*([^=]+)%s*=%s*(.+)%s*$")
-        if key and value then
-            -- Konvertiere "true" und "false" in booleans
-            if value == "true" then
-                value = 1
-            elseif value == "false" then
-                value = 2
-            elseif tonumber(value) then
-                value = tonumber(value)
-            end
-            result[key] = value
-        end
-    end
-    return result
 end
 
 function signals.save()
