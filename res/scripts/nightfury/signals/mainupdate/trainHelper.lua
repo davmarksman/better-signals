@@ -79,7 +79,6 @@ end
 ---@param vehComp any
 ---@return table<number> list of edges occupied by train
 function trainHelper.edgesTrainIsOn(vehicleId, vehComp)
-	-- print("edgesTrainIsOn" .. vehicleId)
 	local edgeEntityIds = {}
 	-- Get Egde for midpoint of train
 	local path = api.engine.getComponent(vehicleId, api.type.ComponentType.MOVE_PATH)

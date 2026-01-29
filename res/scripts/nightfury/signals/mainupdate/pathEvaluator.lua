@@ -179,11 +179,6 @@ function pathEvaluator.findSignalsInPath(path, lookAheadEdges, signalsToEvaluate
 						local values = pathEvaluator.parseName(string.gsub(name.name, " ", ""))
 						
 						if #blocks > 0 then
-							if values ~= nil then
-								for key, value in pairs(values) do
-									print(key,value)
-								end
-							end
 							blocks[#blocks].paramsOverride = values
 						end
 					end
@@ -264,7 +259,6 @@ function pathEvaluator.recalcSignalState(block, trainLocsEdgeEntityIds, isLast, 
 	local signal = block.signalComp.signals[1]
 
 	if signal.state == SIGNAL_STATE_GREEN then
-		-- print("Green signal " .. block.signalListEntityId)
 		return signal.state
 	end
 	if isLast or passedSwitch then
@@ -280,7 +274,6 @@ function pathEvaluator.recalcSignalState(block, trainLocsEdgeEntityIds, isLast, 
 		end
 		return SIGNAL_STATE_GREEN
 	else
-		-- print("Red signal at danger"  .. block.signalListEntityId)
 		return signal.state
 	end
 end

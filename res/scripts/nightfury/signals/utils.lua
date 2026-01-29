@@ -36,9 +36,6 @@ end
 -- @param params parameter by which the new construction should be build
 -- @param reference is a reference to the old entity. This is used to check if the new entity still holds the same id as before
 function utils.updateConstruction(params, reference)
-
-	-- TODO Remove
-	print("utils.updateConstruction",params.id)
 	params.params.seed = nil
 
 	local proposal = api.type.SimpleProposal.new()
