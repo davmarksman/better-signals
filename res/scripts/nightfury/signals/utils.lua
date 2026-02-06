@@ -156,4 +156,17 @@ function utils.deepCopy(orig)
 	return copy
 end
 
+function utils.dictToString(tbl)
+	if tbl == nil then
+		return ""
+	end
+
+    local result = "{"
+    for k, v in pairs(tbl) do
+        result = result .. "[" .. tostring(k) .. "] = " .. tostring(v) .. ", "
+    end
+    result = result:sub(1, -3) .. "}"  -- Remove last comma and space
+    return result
+end
+
 return utils

@@ -170,6 +170,10 @@ function signals.updateConstructions(signalsToBeUpdated)
 						
 						newCheckSum = signalPath.checksum
 
+						if config_debug then
+							print("updatemaybe ", signalPath.entity, newCheckSum, signals.signalObjects[signalKey].checksum )
+						end
+
 						if (not signals.signalObjects[signalKey].checksum) or (newCheckSum ~= signals.signalObjects[signalKey].checksum) then
 							utils.updateConstruction(oldConstruction, conSignal)
 							
@@ -179,7 +183,6 @@ function signals.updateConstructions(signalsToBeUpdated)
 								if signalPath.following_signal then
 									followingState = signalPath.following_signal.signal_state
 								end
-
 								print("utils.updateConstruction for ", signalPath.entity, newCheckSum, signals.signalObjects[signalKey].checksum, followingState,signalPath.signal_state )
 							end
 						end
@@ -203,13 +206,17 @@ function signals.resetAll()
 end
 
 function signals.throwSignalToRed()
-	for _, value in pairs(signals.signalObjects) do
+	for signalkey, value in pairs(signals.signalObjects) do
 		if value.changed == 2 then
 			for _, signal in pairs(value.signals) do
 				local oldConstruction = game.interface.getEntity(signal.construction)
 				if oldConstruction then
 					oldConstruction.params.signal_state = 0
 					oldConstruction.params.previous_speed = nil
+
+					if config_debug then
+						print("Throw to red ", signalkey,value.checksum)
+					end
 
 					utils.updateConstruction(oldConstruction, signal.construction)
 				end

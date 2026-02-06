@@ -87,7 +87,7 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 	
 			if config_debug then
 				local signalAndBlock = signalsInPath[i]
-				print("Pre signal at ", signalAndBlock.edgeEntityIdOn, preSignalTable.entity, preSignalTable.signal_state, preSignalTable.signal_speed, preSignalTable.hasSwitch)
+				print("Pre signal at ", signalAndBlock.edgeEntityIdOn, preSignalTable.entity, preSignalTable.signal_state, preSignalTable.signal_speed, preSignalTable.hasSwitch, utils.dictToString(signalPath.paramsOverride))
 			end
 			table.insert(res, preSignalTable)
 		end
@@ -95,13 +95,18 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 		-- Don't forget to add in the main signal
 		if config_debug then
 			local signalAndBlock = signalsInPath[i]
-			print("Signal at ", signalAndBlock.edgeEntityIdOn, signalPath.entity, signalPath.signal_state, signalPath.signal_speed, signalAndBlock.hasSwitch)
+			print("Signal at ", signalAndBlock.edgeEntityIdOn, signalPath.entity, signalPath.signal_state, signalPath.signal_speed, signalAndBlock.hasSwitch, utils.dictToString(signalPath.paramsOverride))
 		end
 		table.insert(res, signalPath)
 	end
 
 	-- 4th evaluation: calc checksums. We do in reverse order to include following signal in checksum
 	utils.addChecksumToSignals(res)
+	if config_debug then
+		for _, val in pairs(res) do
+			print("checksum", val.entity, val.checksum)
+		end
+	end
 
 	return res
 end
