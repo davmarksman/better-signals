@@ -8,6 +8,12 @@ local config_cameraRadiusSignalVisibleAt = 500 -- Can't see signal when camera r
 local config_debug = false
 
 
+-- 3 states: None, Changed, WasChanged
+local BETTER_SIGNAL_NO_CHANGE = 0
+local BETTER_SIGNAL_CHANGED = 1
+local BETTER_SIGNAL_WAS_CHANGED = 2
+
+
 local signals = {}
 signals.signals = {}
 -- Table holds all placed Signals
@@ -68,8 +74,6 @@ function signals.getPosition()
 	return signals.pos
 end
 ----------------------
-
--- 3 states: None, Changed, WasChanged
 
 --- Function checks move_path of all the trains
 --- If a signal is found it's current state is checked
@@ -153,7 +157,7 @@ function signals.updateConstructions(signalsToBeUpdated)
 		if tableEntry then
 			local newCheckSum = 0
 			for _, betterSignal in pairs(tableEntry.signals) do
-				signals.signalObjects[signalKey].changed = 1
+				signals.signalObjects[signalKey].changed = BETTER_SIGNAL_CHANGED
 				local conSignal = betterSignal.construction
 
 				if conSignal then
@@ -207,7 +211,7 @@ end
 
 function signals.throwSignalToRed()
 	for signalkey, value in pairs(signals.signalObjects) do
-		if value.changed == 2 then
+		if value.changed == BETTER_SIGNAL_WAS_CHANGED then
 			for _, signal in pairs(value.signals) do
 				local oldConstruction = game.interface.getEntity(signal.construction)
 				if oldConstruction then
@@ -220,7 +224,8 @@ function signals.throwSignalToRed()
 
 					utils.updateConstruction(oldConstruction, signal.construction)
 				end
-				value.changed = 0
+				value.changed = BETTER_SIGNAL_NO_CHANGE
+				value.checksum = 0
 			end
 		end
 	end
@@ -237,7 +242,7 @@ function signals.createSignal(signal, construct, signalType, isAnimated)
 		signals.signalObjects[signalKey].signals = {}
 	end
 
-	signals.signalObjects[signalKey].changed = 0
+	signals.signalObjects[signalKey].changed = BETTER_SIGNAL_NO_CHANGE
 	signals.signalObjects[signalKey].signalType = signalType
 	signals.signalObjects[signalKey].construction = construct
 
