@@ -185,6 +185,9 @@ function pathEvaluator.findSignalsInPath(path, lookAheadEdges, signalsToEvaluate
 						
 						if #blocks > 0 then
 							blocks[#blocks].paramsOverride = values
+							if values.speed then
+								blocks[#blocks].minSpeed = values.speed
+							end
 						end
 					end
 				end
