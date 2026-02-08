@@ -7,7 +7,9 @@ Great mod again. My changes only seek to improve a little on the hard work you'v
 
 
 # Debugging
-To aid understanding I've left in print statements. Mods that are also helpful for debuging:
+To aid understanding I've left in print statements that can be switched on using `config_debug = true` in `utils.lua`.
+
+Mods that are also helpful for debuging:
 - AutoSig2 - Speeds up placing and removing signals
 - Splitter - Can use it so hover over a track edges and see entity id and details
 - I created a mod to highlight a train's path. Let me know if you would like that and I can share it
@@ -21,14 +23,15 @@ A red signal can be treated as green if:
 - No train on block it's protecting
 - If it's not protecting a switch: A switch can be crossed in different directions so we don't attempt to work out the complex block that the signal is protecting
 - It's not the last signal we've calculated on the path we're evaluating
+- The path end or a station the train stops at are treated as red signals
 - When in cockpit mode, camera location doesn't update. I've added code to handle that scenario `signals.updateGuiCameraPos`, `signals.setCockpitMode`, `signals.getPosition`
 
 
 ### Performance
 - Signals are only computed when signals are visible (when the camera is too zoomed out signals are not visibile, so no point slowing down the already slow game then :))
 - Signals computation only happens every 5th game update event (every second according to this: https://wiki.transportfever2.com/api/topics/states.md.html). It's a good trade off between performance and the user noticing
-- Only Trains within 2km of the camera are computed: so a signal up to 2km from a train can be triggered by that train. If the train is further out it's path is not computed so the signal doesn't get updated. The 2km is configurable from the mod menu
-- Only 4 signals in front of the train are computed. (Don't need to compute more as only need to get enough signals so we can get that nice Green - Yellow - Red)
+- Only signals for trains within 2km of the camera are computed: so a signal up to apx 8km from a train can be triggered by that train. But only if the train is within 2km of the centre of the camera. This 2km is user configurable - `Signal View Distance`, the 8km is a rough estimate based of `config_lookAheadEdges = 100` 
+- Only 4-6 signals in front of the train are computed (depending on `Signal View Distance`). (Don't need to compute more as only need to get enough signals so we can get that nice Green - Yellow - Red)
 - Signals can now be placed a larger distance, so less signals are placed, resulting in better computation
 
 
