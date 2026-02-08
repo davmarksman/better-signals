@@ -20,7 +20,7 @@ function data()
 					key = "better_signals_view_distance",
 					name = _("better_signals_view_distance"),
 					uiType = "SLIDER",
-					values = {  _("500"), _("1000"), _("1500"), _("2000"), _("2500"), _("3000"), },
+					values = {  _("500"), _("1000"), _("1500"), _("2000"), _("2500"), _("3000"),_("3500"),_("4000"),_("4500"),_("5000")},
 					tooltip = _("better_signals_view_distance_tooltip"),
 					defaultIndex = 4,
 				  },
