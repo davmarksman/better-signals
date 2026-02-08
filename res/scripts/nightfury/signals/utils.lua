@@ -1,4 +1,5 @@
 local utils =  {}
+local config_debug = false
 
 --- Get speed of edge by edgeId
 --- @param edgeId table reference to edge
@@ -167,6 +168,23 @@ function utils.dictToString(tbl)
     end
     result = result:sub(1, -3) .. "}"  -- Remove last comma and space
     return result
+end
+
+---Print a message when debug
+---@param ... unknown
+function utils.debugPrint(...)
+	if config_debug then
+		print(...)
+	end
+end
+
+
+function utils.debugPrintVehicle(vehicleId)
+	if config_debug then
+		print("----------")
+		local vehNameEnt = api.engine.getComponent(vehicleId, api.type.ComponentType.NAME)
+		print("Vehicle " .. vehicleId .. " Name: " .. vehNameEnt.name)
+	end
 end
 
 return utils

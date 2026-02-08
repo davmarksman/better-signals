@@ -8,20 +8,19 @@ local SIGNAL_STATE_RED = 0
 local SIGNAL_STATE_GREEN = 1
 
 local pathEvaluator = {}
-local config_debug = false
 
 -- TODO Edge speeds
 
 ---We evaluate a train's path and create blocks protected by better signals
 ---@param vehicleId any
 ---@param lookAheadEdges any -- Max no of edges to look ahead on path before stopping
----@param signalsToEvaluate any -- Max no of signals to find on the path before stopping
+---@param signalsToEvaluate any -- No of signals to attempt to find on the path before stopping
 ---@param trainLocsEdgeEntityIds any -- edgeEntityIds of location of nearby trains
 ---@param main_signalObjects any -- signals.signalObjects
 ---@param main_signals any -- signals.signals
 ---@return SignalPath
 function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, trainLocsEdgeEntityIds, main_signalObjects, main_signals)
-	---@class SignalPath Represents a block of track protected by a signal
+	---@class SignalPath Represents a block of track protected by a signal. This will be passed to the signal construction
 	---@field entity number Entity from api.engine.system.signalSystem.getSignal(). Should rename but keeping for backwards compatibility
 	---@field signal_state number
 	---@field signal_speed number
@@ -41,7 +40,7 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 
 	---1st evaluation: We split path into blocks protected by signals/end station. Each block starts with a signal
 	local signalsInPath = pathEvaluator.findSignalsInPath(path,lookAheadEdges, signalsToEvaluate, main_signalObjects, main_signals)
-	local passedSwitchOrLevelCrossing = false
+	local passedSwitch = false
 
 	-- 2nd evaluation: We determine signal states for each main signal and prepare to return as SignalPath
 	-- Order is important as we add information from previous and following signals to the current signal
@@ -52,11 +51,11 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 		local signalState = 0
 		if signalAndBlock.isStation == false then
 			if signalAndBlock.hasSwitch then
-				passedSwitchOrLevelCrossing = true
+				passedSwitch = true
 			end
 			
 			-- Recalculate signal state to make more signals green
-			signalState = pathEvaluator.recalcSignalState(signalAndBlock, trainLocsEdgeEntityIds, i==#signalsInPath, passedSwitchOrLevelCrossing)
+			signalState = pathEvaluator.recalcSignalState(signalAndBlock, trainLocsEdgeEntityIds, i==#signalsInPath, passedSwitch)
 		end
 
 		local signalPath = {}
@@ -85,28 +84,18 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 			local preSignalTable = utils.deepCopy(signalPath)
 			preSignalTable.entity = entityId
 	
-			if config_debug then
-				local signalAndBlock = signalsInPath[i]
-				print("Pre signal at ", signalAndBlock.edgeEntityIdOn, preSignalTable.entity, preSignalTable.signal_state, preSignalTable.signal_speed, preSignalTable.hasSwitch, utils.dictToString(signalPath.paramsOverride))
-			end
+			utils.debugPrint("Pre signal at ", signalsInPath[i].edgeEntityIdOn, preSignalTable.entity, preSignalTable.signal_state, preSignalTable.signal_speed, preSignalTable.hasSwitch, utils.dictToString(signalPath.paramsOverride))
 			table.insert(res, preSignalTable)
 		end
 
 		-- Don't forget to add in the main signal
-		if config_debug then
-			local signalAndBlock = signalsInPath[i]
-			print("Signal at ", signalAndBlock.edgeEntityIdOn, signalPath.entity, signalPath.signal_state, signalPath.signal_speed, signalAndBlock.hasSwitch, utils.dictToString(signalPath.paramsOverride))
-		end
+		utils.debugPrint("Main signal at ", signalsInPath[i].edgeEntityIdOn, signalPath.entity, signalPath.signal_state, signalPath.signal_speed, signalsInPath[i].hasSwitch, utils.dictToString(signalPath.paramsOverride))
 		table.insert(res, signalPath)
 	end
 
 	-- 4th evaluation: calc checksums. We do in reverse order to include following signal in checksum
 	utils.addChecksumToSignals(res)
-	if config_debug then
-		for _, val in pairs(res) do
-			print("checksum", val.entity, val.checksum)
-		end
-	end
+
 
 	return res
 end
@@ -143,7 +132,12 @@ function pathEvaluator.findSignalsInPath(path, lookAheadEdges, signalsToEvaluate
 			local currentEdge = path.path.edges[pathIndex]
 			local edgeEntityId = currentEdge.edgeId.entity
 
-			local transportNetwork = api.engine.getComponent(currentEdge.edgeId.entity, api.type.ComponentType.TRANSPORT_NETWORK)
+			local transportNetwork = utils.getComponentProtected(currentEdge.edgeId.entity, api.type.ComponentType.TRANSPORT_NETWORK)
+			if transportNetwork == nil then
+				utils.debugPrint("Unexpected exit of pathEvaluator.findSignalsInPath as transport network doesn't exist")
+				return blocks
+			end
+
 			local speed = math.floor(utils.getEdgeSpeed(currentEdge.edgeId, transportNetwork))
 
 			if #blocks > 0 then
@@ -157,7 +151,19 @@ function pathEvaluator.findSignalsInPath(path, lookAheadEdges, signalsToEvaluate
 
 			-- FYI sometimes the edgeId is duplicated in the path (seems when there is a signal on the edge). dir is needed to identify which one has signal
 			local potentialSignal = api.engine.system.signalSystem.getSignal(currentEdge.edgeId, currentEdge.dir)
-			if potentialSignal and potentialSignal.entity and potentialSignal.entity ~= -1 then
+			if pathEvaluator.isStationOrPathEnd(pathIndex, path, pathEnd) then
+				-- Adding Trainstations/End of path
+				local stopInfo = {
+					edges = {},
+					signalListEntityId = 0000,
+					hasSwitch = false,
+					isStation = true,
+					edgeEntityIdOn = edgeEntityId,
+					minSpeed = 0,
+					presignalsEntityIds = presignalsForNextBlock
+				}
+				table.insert(blocks, stopInfo)
+			elseif potentialSignal and potentialSignal.entity and potentialSignal.entity ~= -1 then
 				local signalComponent = api.engine.getComponent(potentialSignal.entity, api.type.ComponentType.SIGNAL_LIST)
 				if signalComponent and signalComponent.signals and #signalComponent.signals > 0 then
 					local signal = signalComponent.signals[1]
@@ -191,17 +197,6 @@ function pathEvaluator.findSignalsInPath(path, lookAheadEdges, signalsToEvaluate
 						end
 					end
 				end
-			elseif pathEvaluator.isStation(pathIndex, path) then -- Adding Trainstations
-				local stationInfo = {
-					edges = {},
-					signalListEntityId = 0000,
-					hasSwitch = false,
-					isStation = true,
-					edgeEntityIdOn = edgeEntityId,
-					minSpeed = 0,
-					presignalsEntityIds = presignalsForNextBlock
-				}
-				table.insert(blocks, stationInfo)
 			end
 
 			-- register edge to last signal
@@ -210,7 +205,7 @@ function pathEvaluator.findSignalsInPath(path, lookAheadEdges, signalsToEvaluate
 			end
 
 			-- reset loop
-			shouldContinueSearch = pathEvaluator.shouldContinueSearching(#blocks, signalsToEvaluate, pathIndex, pathEnd)
+			shouldContinueSearch = pathEvaluator.shouldContinueSearching(blocks, signalsToEvaluate, pathIndex, pathEnd, path)
 			pathIndex = pathIndex + 1
 		end
 	end
@@ -218,24 +213,27 @@ function pathEvaluator.findSignalsInPath(path, lookAheadEdges, signalsToEvaluate
 	return blocks
 end
 
-function pathEvaluator.isStation(pathIndex, path)
-	return pathIndex == (#path.path.edges - path.path.endOffset)
+function pathEvaluator.isStationOrPathEnd(pathIndex, path, pathEnd)
+	return pathIndex == (#path.path.edges - path.path.endOffset) or pathIndex >= pathEnd
 end
 
-function pathEvaluator.shouldContinueSearching(foundSignals, signalsToEvaluate, pathIndex, pathEnd)
-	if foundSignals >= signalsToEvaluate then
-		-- We've found enough signals to consider
-		if config_debug then
-			print("stopping: enough signals")
-		end
+function pathEvaluator.shouldContinueSearching(foundBlocks, signalsToEvaluate, pathIndex, pathEnd, path)
+	if pathEvaluator.isStationOrPathEnd(pathIndex, path, pathEnd) then
+		-- Reached end
+		utils.debugPrint("stopping: path end/Station")
 		return false
 	end
-	if pathIndex >= pathEnd then
-		-- Reached end
-		if config_debug then
-			print("stopping: path end")
+
+	if #foundBlocks >= signalsToEvaluate then
+		-- We've found enough signals to consider. But if last signal is green keep going till we get a red or a station/end
+		local lastBlock = foundBlocks[#foundBlocks]
+		if lastBlock.isStation == false and lastBlock.signalComp.signals[1].state == SIGNAL_STATE_GREEN then
+			utils.debugPrint("keep going: Green signal")
+			return true
+		else
+			utils.debugPrint("stopping: enough signals")
+			return false
 		end
-		return false
 	end
 
 	return true
@@ -277,9 +275,7 @@ function pathEvaluator.recalcSignalState(block, trainLocsEdgeEntityIds, isLast, 
 	local hasTrainInPath = pathEvaluator.hasTrainInPath(block.edges, trainLocsEdgeEntityIds)
 
 	if not hasTrainInPath then
-		if config_debug then
-			print("Treat red signal as green "  .. block.signalListEntityId)
-		end
+		utils.debugPrint("Treat red signal as green "  .. block.signalListEntityId)
 		return SIGNAL_STATE_GREEN
 	else
 		return signal.state

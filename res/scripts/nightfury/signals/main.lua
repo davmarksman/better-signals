@@ -2,10 +2,8 @@ local trainHelper = require "nightfury/signals/mainupdate/trainHelper"
 local pathEvaluator = require "nightfury/signals/mainupdate/pathEvaluator"
 local utils = require "nightfury/signals/utils"
 
-local config_signalsToEvaluate = 4 -- 4 works well for home/distant. For 4 aspect signalling use 5. This should idealy be a config option
 local config_lookAheadEdges = 100
 local config_cameraRadiusSignalVisibleAt = 500 -- Can't see signal when camera radius is > 500
-local config_debug = false
 
 
 -- 3 states: None, Changed, WasChanged
@@ -83,11 +81,9 @@ function signals.updateSignals()
 		return
 	end
 
-	if config_debug then
-		print("----------")
-		print("Better Signals ", signals.viewDistance)
-		print("----------")
-	end
+	utils.debugPrint("----------")
+	utils.debugPrint("Better Signals ", signals.viewDistance)
+	utils.debugPrint("----------")
 	local start_time = os.clock()
 
 	local pos = signals.getPosition()
@@ -101,9 +97,8 @@ function signals.updateSignals()
 	signals.updateConstructions(signalsToBeUpdated)
 
 	signals.throwSignalToRed()
-	if config_debug then
-		print(string.format("updateSignals. Elapsed time: %.4f", os.clock() - start_time))
-	end
+	utils.debugPrint(string.format("updateSignals. Elapsed time: %.4f", os.clock() - start_time))
+
 end
 
 function signals.computeSignalPaths(trains, trainLocsEdgeIds)
@@ -111,14 +106,12 @@ function signals.computeSignalPaths(trains, trainLocsEdgeIds)
 
 	-- Compute signals in path of each train
 	for vehicleId, vehComp in pairs(trains) do
-		if config_debug then
-			print("----------")
-			local vehNameEnt = api.engine.getComponent(vehicleId, api.type.ComponentType.NAME)
-			print("Vehicle " .. vehicleId .. " Name: " .. vehNameEnt.name)
-		end
+		utils.debugPrintVehicle(vehicleId)
 
 		local lineName = trainHelper.getLineNameOfVehicle(vehComp)
-		local signalPaths = pathEvaluator.evaluate(vehicleId, config_lookAheadEdges, config_signalsToEvaluate, trainLocsEdgeIds, signals.signalObjects, signals.signals)
+		local signalsToEvaluate =  signals.getNoOfSignalsToAttemptToEvaluate()
+
+		local signalPaths = pathEvaluator.evaluate(vehicleId, config_lookAheadEdges, signalsToEvaluate, trainLocsEdgeIds, signals.signalObjects, signals.signals)
 
 		for _, signalPath in ipairs(signalPaths) do
 			signalPath.lineName = lineName.name
@@ -168,27 +161,18 @@ function signals.updateConstructions(signalsToBeUpdated)
 						oldConstruction.params.signal_speed = signalPath.signal_speed
 						oldConstruction.params.following_signal = signalPath.following_signal
 						oldConstruction.params.paramsOverride = signalPath.paramsOverride
+						oldConstruction.params.showSpeedChange = true
+
 						if signalPath.lineName ~= "ERROR" then
 							oldConstruction.params.currentLine = signalPath.lineName
 						end
-						
-						newCheckSum = signalPath.checksum
 
-						if config_debug then
-							print("updatemaybe ", signalPath.entity, newCheckSum, signals.signalObjects[signalKey].checksum )
-						end
+						newCheckSum = signalPath.checksum
 
 						if (not signals.signalObjects[signalKey].checksum) or (newCheckSum ~= signals.signalObjects[signalKey].checksum) then
 							utils.updateConstruction(oldConstruction, conSignal)
 							
-							-- TODO: Should I take this out? I use it for debugging but not necessary in code
-							if config_debug then
-								local followingState = -1
-								if signalPath.following_signal then
-									followingState = signalPath.following_signal.signal_state
-								end
-								print("utils.updateConstruction for ", signalPath.entity, newCheckSum, signals.signalObjects[signalKey].checksum, followingState,signalPath.signal_state )
-							end
+							utils.debugPrint("utils.updateConstruction for ", signalPath.entity, newCheckSum, signals.signalObjects[signalKey].checksum, signalPath.signal_state )
 						end
 					else
 						print("Couldn't access params")
@@ -215,13 +199,10 @@ function signals.throwSignalToRed()
 			for _, signal in pairs(value.signals) do
 				local oldConstruction = game.interface.getEntity(signal.construction)
 				if oldConstruction then
+					utils.debugPrint("Throw to red ", signalkey, value.checksum)
+
 					oldConstruction.params.signal_state = 0
 					oldConstruction.params.previous_speed = nil
-
-					if config_debug then
-						print("Throw to red ", signalkey,value.checksum)
-					end
-
 					utils.updateConstruction(oldConstruction, signal.construction)
 				end
 				value.changed = BETTER_SIGNAL_NO_CHANGE
@@ -290,5 +271,14 @@ function signals.load(state)
 	end
 end
 
-return signals
+function signals.getNoOfSignalsToAttemptToEvaluate()
+	if signals.viewDistance <= 2000 then
+		return 4
+	elseif signals.viewDistance <= 3000 then
+		return 5
+	else
+		return 6
+	end
+end
 
+return signals
