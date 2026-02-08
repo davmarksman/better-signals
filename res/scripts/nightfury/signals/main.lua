@@ -17,6 +17,7 @@ signals.signals = {}
 -- Table holds all placed Signals
 signals.signalObjects = {}
 signals.viewDistance = 2000
+signals.targetNoToEval = 4
 signals.pos = {0,0} -- Updated by event
 signals.posRadius = 1000 -- Updated by event
 signals.cockpitMode = false
@@ -82,7 +83,7 @@ function signals.updateSignals()
 	end
 
 	utils.debugPrint("----------")
-	utils.debugPrint("Better Signals ", signals.viewDistance)
+	utils.debugPrint("Better Signals ", signals.viewDistance, signals.targetNoToEval)
 	utils.debugPrint("----------")
 	local start_time = os.clock()
 
@@ -109,7 +110,7 @@ function signals.computeSignalPaths(trains, trainLocsEdgeIds)
 		utils.debugPrintVehicle(vehicleId)
 
 		local lineName = trainHelper.getLineNameOfVehicle(vehComp)
-		local signalsToEvaluate =  signals.getNoOfSignalsToAttemptToEvaluate()
+		local signalsToEvaluate = signals.targetNoToEval
 
 		local signalPaths = pathEvaluator.evaluate(vehicleId, config_lookAheadEdges, signalsToEvaluate, trainLocsEdgeIds, signals.signalObjects, signals.signals)
 
@@ -268,16 +269,6 @@ end
 function signals.load(state)
 	if state then
 		signals.signalObjects = state
-	end
-end
-
-function signals.getNoOfSignalsToAttemptToEvaluate()
-	if signals.viewDistance <= 2000 then
-		return 4
-	elseif signals.viewDistance <= 3000 then
-		return 5
-	else
-		return 6
 	end
 end
 

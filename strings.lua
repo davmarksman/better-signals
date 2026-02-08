@@ -10,6 +10,9 @@ return {
 		["better_signals_view_distance"] = ("Signal Erkennungsdistanz"),
 		["better_signals_view_distance_tooltip"] = ("Signale werden nur für Züge innerhalb dieser Entfernung der Kamera berechnet"),
 
+		["better_signals_target_no_signals"] = ("Signale vor dem Zug zur Verarbeitung"),
+		["better_signals_target_no_signals_tooltip"] = ("Zielanzahl der Signale, die im Weg eines Zuges ausgewertet werden sollen"),
+
 		["better_signals_x_offset"] = ("Signalauswahl zum verknüpfen kann \nmit ü und ¨ geändert werden.\n\nSignal Versatz"),
 		["better_signals_x_offset_tooltip"] = ("Wähle auf welcher Seite vom Gleis, das Signal snappen soll."),
 		["better_signals_snap_left"] = ("Links"),
@@ -28,6 +31,8 @@ return {
 
 		["better_signals_view_distance"] = ("Signal View Distance"),
 		["better_signals_view_distance_tooltip"] = ("Signals are only computed for trains within this distance of the camera"),
+		["better_signals_target_no_signals"] = ("Signals in front of train to process"),
+		["better_signals_target_no_signals_tooltip"] = ("Target number of signals to evaluate in the path of a train"),
 
 		["better_signals_x_offset"] = ("Signals selection can be changed\nwith [ and ].\n\nSignal Offset"),
 		["better_signals_x_offset_tooltip"] = ("Choose on which side the signals should snap"),

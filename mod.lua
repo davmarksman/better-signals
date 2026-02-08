@@ -14,6 +14,10 @@ function data()
 					name = "nightfury34",
 					role = "CREATOR",
 				},
+				{
+					name = "bottle",
+					role = "Script",
+				},
 			},
 			params = {
 				{
@@ -24,19 +28,31 @@ function data()
 					tooltip = _("better_signals_view_distance_tooltip"),
 					defaultIndex = 4,
 				  },
+					{
+						key = "better_signals_target_no_signals",
+						name = _("better_signals_target_no_signals"),
+						uiType = "SLIDER",
+						values = {  _("3"), _("4"), _("5"), _("6"), _("7"), _("8"), _("9"),_("10")},
+						tooltip = _("better_signals_target_no_signals_tooltip"),
+						defaultIndex = 1,
+				  },
 			},
 		},
 		runFn = function(settings, modParams)
 			if modParams[getCurrentModId()] ~= nil then
 				local params = modParams[getCurrentModId()]
-				
+
 				if params["better_signals_view_distance"] ~= nil then
-					-- Support old values - default to 2000
-					if params["better_signals_view_distance"] > 6 then
-						signals.viewDistance = 2000
+					-- Support old values - default to 2500
+					if params["better_signals_view_distance"] > 9 then
+						signals.viewDistance = 2500
 					else
 						signals.viewDistance = (params["better_signals_view_distance"]+1) * 500
 					end
+				end
+
+				if params["better_signals_target_no_signals"] ~= nil then
+					signals.targetNoToEval = (params["better_signals_target_no_signals"]+3)
 				end
 			end
 
