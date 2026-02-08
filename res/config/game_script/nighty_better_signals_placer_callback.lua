@@ -273,7 +273,6 @@ function data()
 				
 				game.interface.sendScriptEvent("__signalEvent__", "signals.reset", {})
 			elseif (name == "builder.apply") or (name == "builder.proposalCreate") then
-				-- print("builder.proposalCreate")
 				local signal_params = getSignal(param)
 				if not signal_params then
 					return

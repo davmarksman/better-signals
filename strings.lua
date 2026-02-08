@@ -8,7 +8,7 @@ return {
 		["better_signals_desc"] = ("Die Basis Mod der Better-Signals Mod. Muss aktiviert sein, um Module zu aktivieren."),
 
 		["better_signals_view_distance"] = ("Signal Erkennungsdistanz"),
-		["better_signals_view_distance_tooltip"] = ("Stelle ein, wie weit ein Zug Signale sehen kann"),
+		["better_signals_view_distance_tooltip"] = ("Signale werden nur für Züge innerhalb dieser Entfernung der Kamera berechnet"),
 
 		["better_signals_x_offset"] = ("Signalauswahl zum verknüpfen kann \nmit ü und ¨ geändert werden.\n\nSignal Versatz"),
 		["better_signals_x_offset_tooltip"] = ("Wähle auf welcher Seite vom Gleis, das Signal snappen soll."),
@@ -27,9 +27,9 @@ return {
 		["better_signals_desc"] = ("Base Mod for all better signals mods. Needs to be activated"),
 
 		["better_signals_view_distance"] = ("Signal View Distance"),
-		["better_signals_view_distance_tooltip"] = ("Choose how far the trains should be able to evaluate signals"),
+		["better_signals_view_distance_tooltip"] = ("Signals are only computed for trains within this distance of the camera"),
 
-		["better_signals_x_offset"] = ("Signals selection can be changed\nwith ü und ¨.\n\nSignal Offset"),
+		["better_signals_x_offset"] = ("Signals selection can be changed\nwith [ and ].\n\nSignal Offset"),
 		["better_signals_x_offset_tooltip"] = ("Choose on which side the signals should snap"),
 		["better_signals_snap_left"] = ("Left"),
 		["better_signals_snap_right"] = ("Right"),
