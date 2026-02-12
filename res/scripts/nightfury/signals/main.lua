@@ -237,15 +237,7 @@ function signals.createSignal(signal, construct, signalType, isAnimated)
 end
 
 function signals.removeSignalBySignal(signal)
-	local signalObj = signals.signalObjects["signal" .. signal]
 	signals.signalObjects["signal" .. signal] = nil
-
-	local constructionsToRemove = {}
-	for _, signalVal in ipairs(signalObj.signals) do
-		table.insert(constructionsToRemove, signalVal.construction)
-	end
-
-	utils.bulldozerConstructions(constructionsToRemove)
 end
 
 function signals.removeSignalByConstruction(construction)
