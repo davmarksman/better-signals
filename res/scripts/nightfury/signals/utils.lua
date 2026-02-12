@@ -52,7 +52,7 @@ function utils.bulldozerConstructions(consEntityIds)
 
 	api.cmd.sendCommand(api.cmd.make.buildProposal(proposal, nil, false), function(res, success)
 		if not success then
-			print(res.resultProposalData.errorState.messages[1] .. " - " .. toRemove[1])
+			print(res.resultProposalData.errorState.messages[1] .. " - " .. toRemove[0])
 		end
 	end)
 end

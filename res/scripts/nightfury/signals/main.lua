@@ -241,13 +241,11 @@ function signals.removeSignalBySignal(signal)
 	signals.signalObjects["signal" .. signal] = nil
 
 	local constructionsToRemove = {}
-	if signalObj and signalObj.signals then
-		for _, signalVal in pairs(signalObj.signals) do
-			table.insert(constructionsToRemove, signalVal.construction)
-		end
-
-		utils.bulldozerConstructions(constructionsToRemove)
+	for _, signalVal in ipairs(signalObj.signals) do
+		table.insert(constructionsToRemove, signalVal.construction)
 	end
+
+	utils.bulldozerConstructions(constructionsToRemove)
 end
 
 function signals.removeSignalByConstruction(construction)
