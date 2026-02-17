@@ -40,7 +40,7 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 
 	---1st evaluation: We split path into blocks protected by signals/end station. Each block starts with a signal
 	local signalsInPath = pathEvaluator.findSignalsInPath(path,lookAheadEdges, signalsToEvaluate, main_signalObjects, main_signals)
-	local passedSwitch = false
+	local aProtectedSwitchIsRed = false
 
 	-- 2nd evaluation: We determine signal states for each main signal and prepare to return as SignalPath
 	-- Order is important as we add information from previous and following signals to the current signal
@@ -50,12 +50,12 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 
 		local signalState = 0
 		if signalAndBlock.isStation == false then
-			if signalAndBlock.hasSwitch then
-				passedSwitch = true
-			end
-			
 			-- Recalculate signal state to make more signals green
-			signalState = pathEvaluator.recalcSignalState(signalAndBlock, trainLocsEdgeEntityIds, i==#signalsInPath, passedSwitch)
+			signalState = pathEvaluator.recalcSignalState(signalAndBlock, trainLocsEdgeEntityIds, i==#signalsInPath, signalAndBlock.hasSwitch, aProtectedSwitchIsRed)
+
+			if signalAndBlock.hasSwitch and signalState == SIGNAL_STATE_RED then
+				aProtectedSwitchIsRed = true
+			end
 		end
 
 		local signalPath = {}
@@ -259,15 +259,13 @@ end
 ---@param block BlockInfo
 ---@param trainLocsEdgeEntityIds any -- edgeEntityIds of location of nearby trains
 ---@param isLast boolean -- If last signal that has been evaluated unsafe to treat red as green
----@param passedSwitch boolean -- If a switch has been passed in the path as unsafe to treat red as green
+---@param protectsSwitch boolean -- If the signal protects a switch
+---@param aProtectedSwitchIsRed boolean -- If already passed a red signal protecting a switch in the path
 ---@return number -- signal state. 1 is green, 0 is red
-function pathEvaluator.recalcSignalState(block, trainLocsEdgeEntityIds, isLast, passedSwitch)
+function pathEvaluator.recalcSignalState(block, trainLocsEdgeEntityIds, isLast, protectsSwitch, aProtectedSwitchIsRed)
 	local signal = block.signalComp.signals[1]
 
-	if signal.state == SIGNAL_STATE_GREEN then
-		return signal.state
-	end
-	if isLast or passedSwitch then
+	if signal.state == SIGNAL_STATE_GREEN or isLast or protectsSwitch or aProtectedSwitchIsRed then
 		return signal.state
 	end
 
