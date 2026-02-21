@@ -125,18 +125,14 @@ end
 function signals.recordSignalToBeUpdated(signalPath, signalsToBeUpdated)
 	local signalKey = "signal" .. signalPath.entity
 	if signalsToBeUpdated[signalKey] then
-		-- two trains want to update the same signal. Prioritise green signal state over red
-		-- Assumption here is a train with green state would be closer to the signal than one with red
+		-- two trains want to update the same signal. Prioritise whichever train is closest to signal
+
 		local existingPath = signalsToBeUpdated[signalKey]
-		if existingPath.signal_state < signalPath.signal_state then
+		if existingPath.placeInPath > signalPath.placeInPath then
 			signalsToBeUpdated[signalKey] = signalPath
-		elseif existingPath.signal_state == 1 and signalPath.signal_state == 1 then
-			-- Both green, use next signal state to prioritise so we don't get a signal showing yellow followed by signal showing green
-			if existingPath.following_signal and signalPath.following_signal then
-				if existingPath.following_signal.signal_state < signalPath.following_signal.signal_state then
-					signalsToBeUpdated[signalKey] = signalPath
-				end
-			elseif not existingPath.following_signal and signalPath.following_signal then
+		elseif existingPath.placeInPath == signalPath.placeInPath then
+			-- when both have same place use whichever has green
+			if existingPath.signal_state < signalPath.signal_state then
 				signalsToBeUpdated[signalKey] = signalPath
 			end
 		end

@@ -29,6 +29,7 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 	---@field previous_speed boolean
 	---@field checksum number
 	---@field paramsOverride table
+	---@field placeInPath number -- Which number it is from the train's position
 
 	local res = {}
 
@@ -64,6 +65,7 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 		signalPath.signal_speed = signalAndBlock.minSpeed
 		signalPath.incomplete = false
 		signalPath.paramsOverride = signalAndBlock.paramsOverride
+		signalPath.placeInPath = i
 
 		if #mainSignals >0 then
 			signalPath.previous_speed = mainSignals[#mainSignals].signal_speed

@@ -32,7 +32,7 @@ function data()
 					key = "better_signals_target_no_signals",
 					name = _("better_signals_target_no_signals"),
 					uiType = "SLIDER",
-					values = {  _("3"), _("4"), _("5"), _("6"), _("7"), _("8"), _("9"),_("10")},
+					values = {  _("3"), _("4"), _("5"), _("6"), _("7"), _("8"), _("9")},
 					tooltip = _("better_signals_target_no_signals_tooltip"),
 					defaultIndex = 2,
 				},
@@ -51,6 +51,7 @@ function data()
 					end
 				end
 
+				-- Only do up to 9 otherwise may have checksum collisions (2nd to last digit in checksum is signal count. So allowed range 1-9 for that)
 				if params["better_signals_target_no_signals"] ~= nil then
 					signals.targetNoToEval = (params["better_signals_target_no_signals"]+3)
 				end
