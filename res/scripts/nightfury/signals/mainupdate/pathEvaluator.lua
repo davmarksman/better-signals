@@ -41,7 +41,6 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 
 	---1st evaluation: We split path into blocks protected by signals/end station. Each block starts with a signal
 	local signalsInPath = pathEvaluator.findSignalsInPath(path,lookAheadEdges, signalsToEvaluate, main_signalObjects, main_signals)
-	local aProtectedSwitchIsRed = false
 
 	-- 2nd evaluation: We determine signal states for each main signal and prepare to return as SignalPath
 	-- Order is important as we add information from previous and following signals to the current signal
@@ -49,14 +48,10 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 	for i = 1, #signalsInPath, 1 do
 		local signalAndBlock = signalsInPath[i]
 
-		local signalState = 0
+		local signalState = SIGNAL_STATE_RED
 		if signalAndBlock.isStation == false then
 			-- Recalculate signal state to make more signals green
-			signalState = pathEvaluator.recalcSignalState(signalAndBlock, trainLocsEdgeEntityIds, i==#signalsInPath, signalAndBlock.hasSwitch, aProtectedSwitchIsRed)
-
-			if signalAndBlock.hasSwitch and signalState == SIGNAL_STATE_RED then
-				aProtectedSwitchIsRed = true
-			end
+			signalState = pathEvaluator.recalcSignalState(signalAndBlock, trainLocsEdgeEntityIds, i==#signalsInPath, signalAndBlock.hasSwitch)
 		end
 
 		local signalPath = {}
@@ -67,12 +62,21 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 		signalPath.paramsOverride = signalAndBlock.paramsOverride
 		signalPath.placeInPath = i
 
+		local prevSignalState = SIGNAL_STATE_RED
 		if #mainSignals >0 then
 			signalPath.previous_speed = mainSignals[#mainSignals].signal_speed
 			mainSignals[#mainSignals].following_signal = signalPath
+			prevSignalState = mainSignals[#mainSignals].signal_state
 		end
 
 		table.insert(mainSignals, signalPath)
+
+		if signalState == SIGNAL_STATE_RED and (signalAndBlock.hasSwitch or prevSignalState == SIGNAL_STATE_GREEN) then
+			-- We stop early on this red because no point in evaluating beyond the switch or we've hit a red after having a green signals. 
+			-- Note we can't be efficent and just stop when we hit a red as the game tells us the train position with a lag from what is displayed on screen: so we may have multiple red signals before we get our first green signal
+			utils.debugPrint("stopping early")
+			break
+		end
 	end
 
 	-- 3rd evaluation create presignals between the main signals. We do this after the 2nd evaluation because it 2nd sets following_signal, and previous_speed which we need
@@ -85,7 +89,7 @@ function pathEvaluator.evaluate(vehicleId,  lookAheadEdges, signalsToEvaluate, t
 		for _, entityId in pairs(presignalsTable) do
 			local preSignalTable = utils.deepCopy(signalPath)
 			preSignalTable.entity = entityId
-	
+
 			utils.debugPrint("Pre signal at ", signalsInPath[i].edgeEntityIdOn, preSignalTable.entity, preSignalTable.signal_state, preSignalTable.signal_speed, preSignalTable.hasSwitch, utils.dictToString(signalPath.paramsOverride))
 			table.insert(res, preSignalTable)
 		end
@@ -144,11 +148,7 @@ function pathEvaluator.findSignalsInPath(path, lookAheadEdges, signalsToEvaluate
 
 			if #blocks > 0 then
 				blocks[#blocks].minSpeed = math.min(blocks[#blocks].minSpeed, speed)
-		
-				local isSwitchBranch = pathEvaluator.isAfterSwitch(transportNetwork)
-				if isSwitchBranch then
-					blocks[#blocks].hasSwitch = true
-				end
+				blocks[#blocks].hasSwitch = pathEvaluator.isAfterSwitch(transportNetwork)
 			end
 
 			-- FYI sometimes the edgeId is duplicated in the path (seems when there is a signal on the edge). dir is needed to identify which one has signal
@@ -262,12 +262,11 @@ end
 ---@param trainLocsEdgeEntityIds any -- edgeEntityIds of location of nearby trains
 ---@param isLast boolean -- If last signal that has been evaluated unsafe to treat red as green
 ---@param protectsSwitch boolean -- If the signal protects a switch
----@param aProtectedSwitchIsRed boolean -- If already passed a red signal protecting a switch in the path
 ---@return number -- signal state. 1 is green, 0 is red
-function pathEvaluator.recalcSignalState(block, trainLocsEdgeEntityIds, isLast, protectsSwitch, aProtectedSwitchIsRed)
+function pathEvaluator.recalcSignalState(block, trainLocsEdgeEntityIds, isLast, protectsSwitch)
 	local signal = block.signalComp.signals[1]
 
-	if signal.state == SIGNAL_STATE_GREEN or isLast or protectsSwitch or aProtectedSwitchIsRed then
+	if signal.state == SIGNAL_STATE_GREEN or isLast or protectsSwitch then
 		return signal.state
 	end
 

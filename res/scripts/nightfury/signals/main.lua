@@ -99,7 +99,6 @@ function signals.updateSignals()
 
 	signals.throwSignalToRed()
 	utils.debugPrint(string.format("updateSignals. Elapsed time: %.4f", os.clock() - start_time))
-
 end
 
 function signals.computeSignalPaths(trains, trainLocsEdgeIds)
@@ -129,12 +128,17 @@ function signals.recordSignalToBeUpdated(signalPath, signalsToBeUpdated)
 
 		local existingPath = signalsToBeUpdated[signalKey]
 		if existingPath.placeInPath > signalPath.placeInPath then
+			utils.debugPrint("existing replace", signalPath.entity)
 			signalsToBeUpdated[signalKey] = signalPath
 		elseif existingPath.placeInPath == signalPath.placeInPath then
 			-- when both have same place use whichever has green
+			utils.debugPrint("2 trains with same place in", signalPath.entity)
 			if existingPath.signal_state < signalPath.signal_state then
+				utils.debugPrint("existing replace", signalPath.entity)
 				signalsToBeUpdated[signalKey] = signalPath
 			end
+		else
+			utils.debugPrint("existing remains")
 		end
 	else
 		signalsToBeUpdated[signalKey] = signalPath
